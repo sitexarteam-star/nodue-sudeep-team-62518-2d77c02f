@@ -1,0 +1,499 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, XCircle, Clock, GraduationCap, Filter } from "lucide-react";
+import DashboardHeader from "@/components/DashboardHeader";
+import { useToast } from "@/hooks/use-toast";
+import FacultyProfileCard from "@/components/faculty/FacultyProfileCard";
+import ApplicationDetailModal from "@/components/faculty/ApplicationDetailModal";
+import FacultyProfileView from "@/components/faculty/FacultyProfileView";
+import FacultyProfileEdit from "@/components/faculty/FacultyProfileEdit";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+export default function FacultyDashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [staffProfile, setStaffProfile] = useState<any>(null);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showProfileView, setShowProfileView] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState("pending");
+  
+  // Filters
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+  const [selectedSemester, setSelectedSemester] = useState<string>("all");
+
+  useEffect(() => {
+    if (user) {
+      fetchStaffProfile();
+      fetchApplications();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    filterApplications();
+  }, [applications, selectedDepartment, selectedSemester, activeTab]);
+
+  const fetchStaffProfile = async () => {
+    if (!user) return;
+
+    const { data, error } = await (supabase as any)
+      .from('staff_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching staff profile:', error);
+    } else {
+      setStaffProfile(data);
+    }
+  };
+
+  const fetchApplications = async () => {
+    if (!staffProfile?.department) return;
+
+    const { data, error } = await (supabase as any)
+      .from('applications')
+      .select(`
+        *,
+        profiles:student_id (name, usn, email, phone, photo, section, student_type)
+      `)
+      .eq('department', staffProfile.department)
+      .eq('college_office_verified', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching applications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch applications",
+        variant: "destructive"
+      });
+    } else {
+      setApplications(data || []);
+    }
+    setLoading(false);
+  };
+
+  const filterApplications = () => {
+    let filtered = [...applications];
+
+    // Filter by department
+    if (selectedDepartment !== "all") {
+      filtered = filtered.filter(app => app.department === selectedDepartment);
+    }
+
+    // Filter by semester
+    if (selectedSemester !== "all") {
+      filtered = filtered.filter(app => app.semester === parseInt(selectedSemester));
+    }
+
+    // Filter by tab
+    if (activeTab === "pending") {
+      filtered = filtered.filter(app => !app.faculty_verified && app.status !== 'rejected');
+    } else if (activeTab === "approved") {
+      filtered = filtered.filter(app => app.faculty_verified);
+    } else if (activeTab === "rejected") {
+      filtered = filtered.filter(app => app.status === 'rejected' && !app.faculty_verified);
+    }
+
+    setFilteredApplications(filtered);
+  };
+
+  const handleVerification = async (applicationId: string, approved: boolean, comment: string) => {
+    setProcessing(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('applications')
+        .update({
+          faculty_verified: approved,
+          faculty_comment: comment || null,
+          status: approved ? 'faculty_verified' : 'rejected',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      // Create notification for student
+      await (supabase as any)
+        .from('notifications')
+        .insert({
+          user_id: selectedApp.student_id,
+          title: approved ? 'Faculty Verification Approved' : 'Application Rejected',
+          message: approved 
+            ? `Your no-due application has been verified by faculty. ${comment || ''}` 
+            : `Your application was rejected by faculty. Reason: ${comment || 'Not specified'}`,
+          type: approved ? 'approval' : 'rejection',
+          related_entity_type: 'application',
+          related_entity_id: applicationId
+        });
+
+      toast({
+        title: "Success!",
+        description: `Application ${approved ? 'approved' : 'rejected'} successfully`,
+      });
+
+      setShowDetailModal(false);
+      setSelectedApp(null);
+      fetchApplications();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const stats = {
+    total: applications.length,
+    pending: applications.filter(a => !a.faculty_verified && a.status !== 'rejected').length,
+    approved: applications.filter(a => a.faculty_verified).length,
+    rejected: applications.filter(a => a.status === 'rejected' && !a.faculty_verified).length
+  };
+
+  const departments = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL"];
+  const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  if (loading || !staffProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardHeader user={user} title="Faculty Dashboard" />
+      
+      <main className="container mx-auto px-4 py-8 space-y-6">
+        {/* Profile Card */}
+        <FacultyProfileCard 
+          profile={staffProfile}
+          onViewProfile={() => setShowProfileView(true)}
+          onEditProfile={() => setShowProfileEdit(true)}
+        />
+
+        {/* Statistics Overview */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <Clock className="h-4 w-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pending}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.approved}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+              <XCircle className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.rejected}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filter Applications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Department</label>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Semester</label>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Semesters" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Semesters</SelectItem>
+                    {semesters.map(sem => (
+                      <SelectItem key={sem} value={sem.toString()}>Semester {sem}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedDepartment("all");
+                    setSelectedSemester("all");
+                  }}
+                  className="w-full"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Applications Tabs */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Applications</CardTitle>
+            <CardDescription>Manage no-due certificate applications</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="pending">
+                  Pending ({stats.pending})
+                </TabsTrigger>
+                <TabsTrigger value="approved">
+                  Approved ({stats.approved})
+                </TabsTrigger>
+                <TabsTrigger value="rejected">
+                  Rejected ({stats.rejected})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pending" className="mt-4">
+                {filteredApplications.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No pending applications</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>USN</TableHead>
+                        <TableHead>Department</TableHead>
+                        <TableHead>Semester</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={app.profiles?.photo} />
+                                <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                  {app.profiles?.name?.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{app.profiles?.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{app.profiles?.usn}</TableCell>
+                          <TableCell>{app.department}</TableCell>
+                          <TableCell>{app.semester}</TableCell>
+                          <TableCell>{new Date(app.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedApp(app);
+                                setShowDetailModal(true);
+                              }}
+                            >
+                              Review
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </TabsContent>
+
+              <TabsContent value="approved" className="mt-4">
+                {filteredApplications.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No approved applications</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>USN</TableHead>
+                        <TableHead>Department</TableHead>
+                        <TableHead>Semester</TableHead>
+                        <TableHead>Approved On</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={app.profiles?.photo} />
+                                <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                  {app.profiles?.name?.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{app.profiles?.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{app.profiles?.usn}</TableCell>
+                          <TableCell>{app.department}</TableCell>
+                          <TableCell>{app.semester}</TableCell>
+                          <TableCell>{new Date(app.updated_at).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedApp(app);
+                                setShowDetailModal(true);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </TabsContent>
+
+              <TabsContent value="rejected" className="mt-4">
+                {filteredApplications.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No rejected applications</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>USN</TableHead>
+                        <TableHead>Department</TableHead>
+                        <TableHead>Semester</TableHead>
+                        <TableHead>Rejected On</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={app.profiles?.photo} />
+                                <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                  {app.profiles?.name?.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{app.profiles?.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{app.profiles?.usn}</TableCell>
+                          <TableCell>{app.department}</TableCell>
+                          <TableCell>{app.semester}</TableCell>
+                          <TableCell>{new Date(app.updated_at).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedApp(app);
+                                setShowDetailModal(true);
+                              }}
+                            >
+                              Approve
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Modals */}
+      <ApplicationDetailModal
+        application={selectedApp}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedApp(null);
+        }}
+        onApprove={(comment) => handleVerification(selectedApp.id, true, comment)}
+        onReject={(comment) => handleVerification(selectedApp.id, false, comment)}
+        processing={processing}
+      />
+
+      <FacultyProfileView
+        profile={staffProfile}
+        stats={stats}
+        isOpen={showProfileView}
+        onClose={() => setShowProfileView(false)}
+      />
+
+      <FacultyProfileEdit
+        profile={staffProfile}
+        isOpen={showProfileEdit}
+        onClose={() => setShowProfileEdit(false)}
+        onUpdate={fetchStaffProfile}
+      />
+    </div>
+  );
+}
