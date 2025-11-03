@@ -49,6 +49,28 @@ export default function LibraryDashboard() {
     return () => clearInterval(interval);
   }, [selectedApp]);
 
+  // Real-time subscription for new applications
+  useEffect(() => {
+    const channel = supabase
+      .channel('library-applications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'applications'
+        },
+        () => {
+          fetchApplications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const fetchStaffProfile = async () => {
     if (!user?.id) return;
     
@@ -98,7 +120,6 @@ export default function LibraryDashboard() {
         *,
         profiles!applications_student_id_fkey (name, usn, email, department, photo, student_type, section)
       `)
-      .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -191,9 +212,9 @@ export default function LibraryDashboard() {
     }
   };
 
-  const pendingApps = filteredApps.filter(a => a.status === 'pending');
-  const approvedApps = filteredApps.filter(a => a.library_verified && a.status !== 'pending' && a.status !== 'rejected');
-  const rejectedApps = filteredApps.filter(a => a.status === 'rejected');
+  const pendingApps = filteredApps.filter(a => a.status === 'pending' && !a.library_verified);
+  const approvedApps = filteredApps.filter(a => a.library_verified === true);
+  const rejectedApps = filteredApps.filter(a => a.status === 'rejected' && !a.library_verified);
 
   const stats = {
     total: filteredApps.length,

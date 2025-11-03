@@ -232,7 +232,7 @@ const SubmitNoDueForm = () => {
 
       if (appError) throw appError;
 
-      // Create notification
+      // Create notification for student
       await supabase.rpc('create_notification', {
         p_user_id: user?.id,
         p_title: 'Application Submitted',
@@ -241,6 +241,27 @@ const SubmitNoDueForm = () => {
         p_related_entity_type: 'application',
         p_related_entity_id: appData.id
       });
+
+      // Notify all library staff
+      const { data: libraryStaff } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'library');
+
+      if (libraryStaff && libraryStaff.length > 0) {
+        const libraryNotifications = libraryStaff.map(staff => ({
+          user_id: staff.user_id,
+          title: 'New No-Due Application',
+          message: `${profile.name} (${profile.usn}) from ${department} - Semester ${semester} has submitted a No-Due application for review.`,
+          type: 'info' as const,
+          related_entity_type: 'application',
+          related_entity_id: appData.id
+        }));
+
+        await supabase
+          .from('notifications')
+          .insert(libraryNotifications);
+      }
 
       toast.success('Application submitted successfully!');
       navigate('/dashboard/student');
