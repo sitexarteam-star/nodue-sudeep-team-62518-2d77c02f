@@ -70,8 +70,10 @@ export default function HostelDashboard() {
       .from('applications')
       .select(`
         *,
-        profiles:student_id (name, usn, email, student_type, photo)
+        profiles:student_id (name, usn, email, student_type, photo, section, department)
       `)
+      .eq('profiles.student_type', 'hostel')
+      .in('status', ['hostel_verification_pending', 'hostel_verified', 'rejected'])
       .eq('library_verified', true)
       .order('created_at', { ascending: false });
 
@@ -86,12 +88,14 @@ export default function HostelDashboard() {
   const handleVerification = async (applicationId: string, comment: string, approved: boolean) => {
     setProcessing(true);
     try {
+      const nextStatus = approved ? 'college_office_verification_pending' : 'rejected';
+      
       const { error } = await (supabase as any)
         .from('applications')
         .update({
           hostel_verified: approved,
           hostel_comment: comment || null,
-          status: approved ? 'hostel_verified' : 'rejected',
+          status: nextStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', applicationId);
@@ -104,7 +108,7 @@ export default function HostelDashboard() {
           user_id: selectedApp.student_id,
           title: approved ? 'Hostel Clearance Approved' : 'Hostel Clearance Rejected',
           message: approved 
-            ? `Your hostel clearance has been approved. ${comment || ''}` 
+            ? `Your hostel clearance has been approved. Your application has been sent to College Office for verification. ${comment || ''}` 
             : `Hostel clearance rejected. Reason: ${comment || 'Not specified'}. Please visit the hostel office to resolve.`,
           type: approved ? 'approval' : 'rejection',
           related_entity_type: 'application',
@@ -131,8 +135,8 @@ export default function HostelDashboard() {
   };
 
   const hostelStudents = applications.filter(a => a.profiles?.student_type === 'hostel');
-  const pendingApps = filteredApps.filter(a => !a.hostel_verified && a.status !== 'rejected');
-  const approvedApps = filteredApps.filter(a => a.hostel_verified);
+  const pendingApps = filteredApps.filter(a => a.status === 'hostel_verification_pending' && !a.hostel_verified);
+  const approvedApps = filteredApps.filter(a => a.hostel_verified === true);
   const rejectedApps = filteredApps.filter(a => a.status === 'rejected' && !a.hostel_verified);
   
   const stats = {
