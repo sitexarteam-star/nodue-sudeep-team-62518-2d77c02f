@@ -64,64 +64,65 @@ export default function FacultyDashboard() {
   const fetchApplications = async () => {
     if (!user?.id) return;
 
-    // Fetch applications where the current faculty member was selected
-    const { data, error } = await (supabase as any)
-      .from('application_subject_faculty')
-      .select(`
-        id,
-        application_id,
-        subject_id,
-        faculty_verified,
-        faculty_comment,
-        verified_at,
-        subjects:subject_id(name, code),
-        applications:application_id(
-          *,
-          profiles:student_id(name, usn, email, phone, photo, section, student_type, department, semester, batch)
-        )
-      `)
-      .eq('faculty_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      // Fetch ALL applications where the current faculty member was selected
+      const { data, error } = await (supabase as any)
+        .from('application_subject_faculty')
+        .select(`
+          id,
+          application_id,
+          subject_id,
+          faculty_verified,
+          faculty_comment,
+          verified_at,
+          subjects:subject_id(name, code),
+          applications:application_id(
+            *,
+            profiles:student_id(name, usn, email, phone, photo, section, student_type, department, semester, batch)
+          )
+        `)
+        .eq('faculty_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+
+      // Filter for college office verified applications only
+      const filtered = (data || []).filter(assignment => 
+        assignment.applications?.college_office_verified === true
+      );
+
+      // Group by application ID to show one row per application
+      const applicationMap = new Map();
+      filtered.forEach(assignment => {
+        const appId = assignment.application_id;
+        if (!applicationMap.has(appId)) {
+          applicationMap.set(appId, {
+            ...assignment.applications,
+            faculty_assignments: []
+          });
+        }
+        applicationMap.get(appId).faculty_assignments.push({
+          id: assignment.id,
+          subject_id: assignment.subject_id,
+          subject_name: assignment.subjects?.name,
+          subject_code: assignment.subjects?.code,
+          faculty_verified: assignment.faculty_verified,
+          faculty_comment: assignment.faculty_comment,
+          verified_at: assignment.verified_at
+        });
+      });
+
+      setApplications(Array.from(applicationMap.values()));
+    } catch (error: any) {
       console.error('Error fetching applications:', error);
       toast({
         title: "Error",
         description: "Failed to fetch applications",
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Filter for college office verified applications only
-    const filtered = (data || []).filter(assignment => 
-      assignment.applications?.college_office_verified === true
-    );
-
-    // Group by application ID to show one row per application
-    const applicationMap = new Map();
-    filtered.forEach(assignment => {
-      const appId = assignment.application_id;
-      if (!applicationMap.has(appId)) {
-        applicationMap.set(appId, {
-          ...assignment.applications,
-          faculty_assignments: []
-        });
-      }
-      applicationMap.get(appId).faculty_assignments.push({
-        id: assignment.id,
-        subject_id: assignment.subject_id,
-        subject_name: assignment.subjects?.name,
-        subject_code: assignment.subjects?.code,
-        faculty_verified: assignment.faculty_verified,
-        faculty_comment: assignment.faculty_comment,
-        verified_at: assignment.verified_at
-      });
-    });
-
-    setApplications(Array.from(applicationMap.values()));
-    setLoading(false);
   };
 
   const filterApplications = () => {

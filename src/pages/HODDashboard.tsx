@@ -24,24 +24,40 @@ export default function HODDashboard() {
   }, [profile]);
 
   const fetchApplications = async () => {
-    if (!profile?.department) return;
-
-    const { data, error } = await (supabase as any)
-      .from('applications')
-      .select(`
-        *,
-        profiles:student_id (name, usn, email)
-      `)
-      .eq('department', profile.department)
-      .eq('faculty_verified', true)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching applications:', error);
-    } else {
-      setApplications(data || []);
+    if (!profile?.department) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    try {
+      // Fetch applications from the HOD's department that have faculty verification completed
+      const { data, error } = await (supabase as any)
+        .from('applications')
+        .select(`
+          *,
+          profiles:student_id (name, usn, email, department)
+        `)
+        .eq('faculty_verified', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Filter by department from the joined profiles table
+      const departmentFiltered = (data || []).filter(
+        app => app.profiles?.department === profile.department
+      );
+
+      setApplications(departmentFiltered);
+    } catch (error: any) {
+      console.error('Error fetching applications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch applications",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerification = async (applicationId: string, approved: boolean) => {
@@ -50,14 +66,9 @@ export default function HODDashboard() {
       const updateData: any = {
         hod_verified: approved,
         hod_comment: comment || null,
-        status: approved ? 'payment_pending' : 'rejected',
+        status: approved ? 'hod_verified' : 'rejected',
         updated_at: new Date().toISOString()
       };
-
-      // When HOD approves, mark as ready for payment
-      if (approved) {
-        updateData.payment_verified = true; // Auto-approve payment for now
-      }
 
       const { error } = await (supabase as any)
         .from('applications')
@@ -73,7 +84,7 @@ export default function HODDashboard() {
           user_id: selectedApp.student_id,
           title: approved ? 'HOD Verification Approved' : 'Application Rejected by HOD',
           message: approved 
-            ? `Your application has been verified by the HOD. Proceed to lab charge verification. ${comment || ''}` 
+            ? `Your application has been verified by the HOD. You can now proceed to lab charge payment. ${comment || ''}` 
             : `Your application was rejected by HOD. Reason: ${comment || 'Not specified'}`,
           type: approved ? 'approval' : 'rejection',
           related_entity_type: 'application',
