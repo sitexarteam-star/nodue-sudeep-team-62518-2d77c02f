@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import DashboardHeader from "@/components/DashboardHeader";
 import { useNotifications } from "@/hooks/useNotifications";
+import { generateCertificateHTML } from "@/utils/certificateGenerator";
 
 interface StudentProfile {
   id: string;
@@ -53,6 +54,7 @@ interface Application {
   payment_verified: boolean;
   lab_verified: boolean;
   created_at: string;
+  updated_at: string;
   library_comment?: string;
   hostel_comment?: string;
   college_office_comment?: string;
@@ -126,6 +128,36 @@ const StudentDashboard = () => {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleCertificateDownload = () => {
+    if (!currentApplication || !profile) {
+      toast.error("Certificate data not available");
+      return;
+    }
+    
+    const certificateWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!certificateWindow) {
+      toast.error('Please allow pop-ups to download certificate');
+      return;
+    }
+    
+    try {
+      const certificateHTML = generateCertificateHTML(currentApplication, profile);
+      certificateWindow.document.write(certificateHTML);
+      certificateWindow.document.close();
+      
+      // Auto-trigger print dialog after a short delay
+      setTimeout(() => {
+        certificateWindow.print();
+      }, 250);
+      
+      toast.success("Certificate opened. Use Print dialog to save as PDF");
+    } catch (error) {
+      console.error("Error generating certificate:", error);
+      certificateWindow.close();
+      toast.error("Failed to generate certificate");
+    }
   };
 
   const calculateProgress = (app: Application) => {
@@ -341,9 +373,7 @@ const StudentDashboard = () => {
             variant="outline" 
             className="h-24 text-lg"
             disabled={!currentApplication?.lab_verified}
-            onClick={() => {
-              toast.info('Certificate download will be available here');
-            }}
+            onClick={handleCertificateDownload}
           >
             <Download className="h-6 w-6 mr-2" />
             Download Certificate
