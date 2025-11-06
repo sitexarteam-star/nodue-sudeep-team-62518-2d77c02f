@@ -361,7 +361,7 @@ const StudentDashboard = () => {
             size="lg" 
             variant="outline" 
             className="h-24 text-lg"
-            disabled={!currentApplication?.hod_verified || currentApplication?.payment_verified}
+            disabled={!currentApplication || !currentApplication.hod_verified || currentApplication.payment_verified}
             onClick={() => navigate('/student/lab-payment')}
           >
             <CreditCard className="h-6 w-6 mr-2" />
@@ -372,7 +372,7 @@ const StudentDashboard = () => {
             size="lg" 
             variant="outline" 
             className="h-24 text-lg"
-            disabled={!currentApplication?.lab_verified}
+            disabled={!currentApplication || !currentApplication.lab_verified}
             onClick={handleCertificateDownload}
           >
             <Download className="h-6 w-6 mr-2" />
