@@ -62,18 +62,14 @@ export default function LabInstructorDashboard() {
           profiles:student_id (name, usn, email, department, semester, photo, student_type)
         `)
         .eq('hod_verified', true)
+        .eq('department', staffProfile.department)
         .not('transaction_id', 'is', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Filter by lab instructor's department
-      const departmentFiltered = (data || []).filter(
-        (app: any) => app.profiles?.department === staffProfile.department
-      );
-
-      setApplications(departmentFiltered);
-      setFilteredApplications(departmentFiltered);
+      setApplications(data || []);
+      setFilteredApplications(data || []);
     } catch (error: any) {
       console.error('Error fetching applications:', error);
       toast.error("Failed to load applications");
