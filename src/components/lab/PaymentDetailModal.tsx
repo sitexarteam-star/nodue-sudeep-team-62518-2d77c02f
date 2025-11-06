@@ -145,8 +145,8 @@ export const PaymentDetailModal = ({
             </div>
           </div>
 
-          {/* Action Section */}
-          {!application.lab_verified && application.status !== "completed" && (
+          {/* Action Section - Only show for payment_pending applications */}
+          {!application.lab_verified && application.status === "payment_pending" && (
             <>
               <Separator />
               <div>

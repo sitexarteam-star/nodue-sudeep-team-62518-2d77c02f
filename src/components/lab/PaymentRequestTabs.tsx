@@ -17,8 +17,9 @@ export const PaymentRequestTabs = ({
   onViewDetails,
   onApproveRejected,
 }: PaymentRequestTabsProps) => {
+  // Filter for pending applications - those with payment_pending status
   const pendingApps = applications.filter(
-    (a) => !a.lab_verified && a.status !== "rejected" && a.status !== "completed"
+    (a) => a.status === "payment_pending" && !a.lab_verified
   );
   const approvedApps = applications.filter((a) => a.lab_verified && a.status === "completed");
   const rejectedApps = applications.filter((a) => a.status === "rejected" && !a.lab_verified);

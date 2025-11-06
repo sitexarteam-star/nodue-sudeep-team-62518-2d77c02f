@@ -48,6 +48,8 @@ export default function LabInstructorDashboard() {
     }
   };
 
+  // Fetch applications that are ready for Lab Instructor verification
+  // Lab Instructor handles BOTH payment verification AND final lab verification
   const fetchApplications = async () => {
     if (!staffProfile?.department) {
       setLoading(false);
@@ -93,16 +95,20 @@ export default function LabInstructorDashboard() {
     toast.success("Filters applied");
   };
 
+  // Lab Instructor performs BOTH verifications in a single action:
+  // 1. Payment Verification - Checks if the transaction ID is valid
+  // 2. Lab Verification - Confirms student has no lab dues
+  // When approved, both payment_verified and lab_verified are set to true
   const handleVerification = async (applicationId: string, approved: boolean, comment: string) => {
     setProcessing(true);
     try {
-      // Update application status
+      // Update application with both payment and lab verification
       const { error } = await (supabase as any)
         .from('applications')
         .update({
           lab_verified: approved,
           lab_comment: comment || null,
-          payment_verified: approved, // Mark payment as verified
+          payment_verified: approved, // Payment is verified along with lab
           status: approved ? 'completed' : 'rejected',
           updated_at: new Date().toISOString()
         })
@@ -152,10 +158,13 @@ export default function LabInstructorDashboard() {
 
   const stats = {
     total: filteredApplications.length,
+    // Pending: Applications with payment_pending status awaiting Lab Instructor verification
     pending: filteredApplications.filter(a => 
-      !a.lab_verified && !a.payment_verified && a.status !== 'rejected' && a.status !== 'completed'
+      a.status === 'payment_pending' && !a.lab_verified
     ).length,
+    // Completed: Applications where Lab Instructor has verified payment and lab dues
     completed: filteredApplications.filter(a => a.lab_verified && a.status === 'completed').length,
+    // Rejected: Applications rejected by Lab Instructor
     rejected: filteredApplications.filter(a => a.status === 'rejected').length
   };
 
