@@ -22,7 +22,6 @@ interface Subject {
 interface Faculty {
   id: string;
   name: string;
-  email: string;
   designation: string;
   department: string;
 }
@@ -120,12 +119,10 @@ const SubmitNoDueForm = () => {
 
   const fetchFaculty = async () => {
     try {
-      // Fetch faculty from all departments with specific designations
+      // Fetch faculty from public view (excludes sensitive contact info)
       const { data, error } = await supabase
-        .from('staff_profiles')
-        .select('id, name, email, designation, department')
-        .in('designation', ['HOD', 'Associate Professor', 'Assistant Professor'])
-        .eq('is_active', true)
+        .from('faculty_public')
+        .select('id, name, designation, department')
         .order('designation', { ascending: true })
         .order('department', { ascending: true })
         .order('name', { ascending: true });
@@ -217,32 +214,15 @@ const SubmitNoDueForm = () => {
     setIsSubmitting(true);
 
     try {
-      // Create application
-      const { data: appData, error: appError } = await supabase
-        .from('applications')
-        .insert({
-          student_id: user?.id as string,
-          department: department as any,
-          semester: semester as number,
-          batch: profile.batch,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (appError) throw appError;
-
-      // Save subject-faculty mappings
-      const subjectFacultyRecords = [];
+      // Prepare subject-faculty mappings
+      const subjectFacultyMappings = [];
       
       // Add fixed subjects
       for (const subject of fixedSubjects) {
         if (subjectFacultyMap[subject.id]) {
-          subjectFacultyRecords.push({
-            application_id: appData.id,
+          subjectFacultyMappings.push({
             subject_id: subject.id,
-            faculty_id: subjectFacultyMap[subject.id],
-            faculty_verified: false
+            faculty_id: subjectFacultyMap[subject.id]
           });
         }
       }
@@ -250,73 +230,34 @@ const SubmitNoDueForm = () => {
       // Add selected electives
       for (const electiveId of selectedElectives) {
         if (subjectFacultyMap[electiveId]) {
-          subjectFacultyRecords.push({
-            application_id: appData.id,
+          subjectFacultyMappings.push({
             subject_id: electiveId,
-            faculty_id: subjectFacultyMap[electiveId],
-            faculty_verified: false
+            faculty_id: subjectFacultyMap[electiveId]
           });
         }
       }
 
-      // Insert all subject-faculty mappings
-      const { error: mappingError } = await supabase
-        .from('application_subject_faculty')
-        .insert(subjectFacultyRecords);
-
-      if (mappingError) throw mappingError;
-
-      // Create notification for student
-      await supabase.rpc('create_notification', {
-        p_user_id: user?.id,
-        p_title: 'Application Submitted',
-        p_message: `Your No-Due application for Semester ${semester} has been submitted successfully.`,
-        p_type: 'info',
-        p_related_entity_type: 'application',
-        p_related_entity_id: appData.id
+      // Submit application via edge function with validation
+      const { data, error } = await supabase.functions.invoke('submit-application', {
+        body: {
+          department,
+          semester,
+          batch: profile.batch,
+          subjects: subjectFacultyMappings
+        }
       });
 
-      // Notify all library staff
-      const { data: libraryStaff, error: libraryStaffError } = await supabase
-        .rpc('get_users_by_role', { role_name: 'library' });
+      if (error) throw error;
 
-      if (libraryStaffError) {
-        console.error('Failed to fetch library staff:', libraryStaffError);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to submit application');
       }
-
-      if (libraryStaff && libraryStaff.length > 0) {
-        const libraryNotifications = libraryStaff.map(staff => ({
-          user_id: String(staff.user_id),
-          title: 'New No-Due Application',
-          message: `${profile.name} (${profile.usn}) from ${department} - Semester ${semester} has submitted a No-Due application for review.`,
-          type: 'info' as const,
-          related_entity_type: 'application',
-          related_entity_id: String(appData.id)
-        }));
-
-        console.log('Notifying library staff:', libraryStaff.length, 'staff members');
-        console.log('Notification data:', JSON.stringify(libraryNotifications, null, 2));
-        
-        const { error: notificationError } = await supabase.rpc('create_bulk_notifications', {
-          notifications: libraryNotifications
-        });
-
-        if (notificationError) {
-          console.error('Failed to notify library staff:', notificationError);
-          console.error('Error details:', JSON.stringify(notificationError, null, 2));
-        } else {
-          console.log('Successfully notified library staff');
-        }
-      } else {
-        console.warn('No library staff found to notify');
-      }
-
 
       toast.success('Application submitted successfully!');
       navigate('/dashboard/student');
     } catch (error: any) {
       console.error('Error submitting application:', error);
-      toast.error('Failed to submit application');
+      toast.error(error.message || 'Failed to submit application');
     } finally {
       setIsSubmitting(false);
     }

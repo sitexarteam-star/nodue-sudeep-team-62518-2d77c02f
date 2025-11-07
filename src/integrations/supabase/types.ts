@@ -60,6 +60,13 @@ export type Database = {
             foreignKeyName: "application_subject_faculty_faculty_id_fkey"
             columns: ["faculty_id"]
             isOneToOne: false
+            referencedRelation: "faculty_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_subject_faculty_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
             referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
           },
@@ -409,7 +416,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      faculty_public: {
+        Row: {
+          department: Database["public"]["Enums"]["department"] | null
+          designation: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+        }
+        Insert: {
+          department?: Database["public"]["Enums"]["department"] | null
+          designation?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+        }
+        Update: {
+          department?: Database["public"]["Enums"]["department"] | null
+          designation?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_audit_log: {
