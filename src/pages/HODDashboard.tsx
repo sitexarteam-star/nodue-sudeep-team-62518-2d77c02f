@@ -450,7 +450,7 @@ export default function HODDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader user={user} title="HOD Dashboard" />
+      <DashboardHeader user={{ ...profile, role: profile?.designation || 'HOD' }} title="HOD Dashboard" />
       
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Profile Summary */}

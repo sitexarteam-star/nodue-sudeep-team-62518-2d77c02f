@@ -17,7 +17,7 @@ import FacultyProfileEdit from "@/components/faculty/FacultyProfileEdit";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function FacultyDashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [staffProfile, setStaffProfile] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
@@ -302,7 +302,7 @@ export default function FacultyDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader user={user} title="Faculty Dashboard" />
+      <DashboardHeader user={{ ...profile, role: profile?.designation || 'Faculty' }} title="Faculty Dashboard" />
       
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Profile Card */}
