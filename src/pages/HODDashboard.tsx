@@ -192,6 +192,9 @@ export default function HODDashboard() {
   const handleTeachingVerification = async (applicationId: string, approved: boolean) => {
     setProcessing(true);
     try {
+      // For re-approval of rejected applications
+      const isReapproval = selectedApp.status === 'rejected';
+      
       // Update all faculty assignments for this application and current HOD (as faculty)
       const assignmentsToUpdate = selectedApp.faculty_assignments.map((a: any) => a.id);
       
@@ -217,8 +220,8 @@ export default function HODDashboard() {
 
       const allVerified = allAssignments?.every(a => a.faculty_verified === true);
 
-      // If all faculty have verified OR if rejected, update the main application
-      if (allVerified || !approved) {
+      // If all faculty have verified OR if rejected OR if re-approving, update the main application
+      if (allVerified || !approved || isReapproval) {
         const { error: appError } = await supabase
           .from('applications')
           .update({
@@ -234,15 +237,17 @@ export default function HODDashboard() {
         // Notify student
         const notificationMessage = !approved 
           ? `Your application was rejected by faculty (${profile?.name}). Reason: ${comment || 'Not specified'}`
-          : allVerified 
-            ? `All faculty members have verified your subjects. Your application is now proceeding to HOD verification.`
-            : `Faculty verification in progress.`;
+          : isReapproval
+            ? `Your previously rejected application has been re-approved by faculty (${profile?.name}). ${comment || ''}`
+            : allVerified 
+              ? `All faculty members have verified your subjects. Your application is now proceeding to HOD verification.`
+              : `Faculty verification in progress.`;
 
         await supabase
           .from('notifications')
           .insert({
             user_id: selectedApp.student_id,
-            title: !approved ? 'Application Rejected' : allVerified ? 'All Faculty Verified' : 'Faculty Verification Update',
+            title: !approved ? 'Application Rejected' : isReapproval ? 'Application Re-approved' : allVerified ? 'All Faculty Verified' : 'Faculty Verification Update',
             message: notificationMessage,
             type: !approved ? 'rejection' : 'approval',
             related_entity_type: 'application',
@@ -288,7 +293,7 @@ export default function HODDashboard() {
 
       toast({
         title: "Success!",
-        description: `Subjects ${approved ? 'verified' : 'rejected'} successfully`,
+        description: `Application ${isReapproval ? 're-approved' : approved ? 'verified' : 'rejected'} successfully`,
       });
 
       setComment("");
@@ -308,6 +313,8 @@ export default function HODDashboard() {
   const handleHODVerification = async (applicationId: string, approved: boolean) => {
     setProcessing(true);
     try {
+      const isReapproval = selectedApp.status === 'rejected';
+      
       const updateData: any = {
         hod_verified: approved,
         hod_comment: comment || null,
@@ -327,9 +334,13 @@ export default function HODDashboard() {
         .from('notifications')
         .insert({
           user_id: selectedApp.student_id,
-          title: approved ? 'HOD Verification Approved' : 'Application Rejected by HOD',
+          title: approved 
+            ? (isReapproval ? 'Application Re-approved by HOD' : 'HOD Verification Approved')
+            : 'Application Rejected by HOD',
           message: approved 
-            ? `Your application has been verified by the HOD. You can now proceed to lab charge payment. ${comment || ''}` 
+            ? isReapproval
+              ? `Your previously rejected application has been re-approved by the HOD. You can now proceed to lab charge payment. ${comment || ''}`
+              : `Your application has been verified by the HOD. You can now proceed to lab charge payment. ${comment || ''}` 
             : `Your application was rejected by HOD. Reason: ${comment || 'Not specified'}`,
           type: approved ? 'approval' : 'rejection',
           related_entity_type: 'application',
@@ -368,7 +379,7 @@ export default function HODDashboard() {
 
       toast({
         title: "Success!",
-        description: `Application ${approved ? 'approved' : 'rejected'} successfully`,
+        description: `Application ${isReapproval ? 're-approved' : approved ? 'approved' : 'rejected'} successfully`,
       });
 
       setComment("");
@@ -677,7 +688,9 @@ export default function HODDashboard() {
                             )}
                             <TableCell>
                               {activeMode === 'teaching' ? (
-                                item.faculty_assignments?.every((fa: any) => fa.faculty_verified) ? (
+                                app.status === 'rejected' ? (
+                                  <Badge variant="destructive">Rejected</Badge>
+                                ) : item.faculty_assignments?.every((fa: any) => fa.faculty_verified) ? (
                                   <Badge variant="default">Verified</Badge>
                                 ) : (
                                   <Badge variant="secondary">Pending</Badge>
@@ -697,11 +710,18 @@ export default function HODDashboard() {
                             </TableCell>
                             <TableCell>
                               {activeMode === 'teaching' ? (
-                                !item.faculty_assignments?.every((fa: any) => fa.faculty_verified) && (
-                                  <Button size="sm" onClick={() => setSelectedApp(item)}>
-                                    Review
-                                  </Button>
-                                )
+                                <>
+                                  {activeTab === 'pending' && !item.faculty_assignments?.every((fa: any) => fa.faculty_verified) && (
+                                    <Button size="sm" onClick={() => setSelectedApp(item)}>
+                                      Review
+                                    </Button>
+                                  )}
+                                  {activeTab === 'rejected' && (
+                                    <Button size="sm" variant="outline" onClick={() => setSelectedApp(item)}>
+                                      Re-approve
+                                    </Button>
+                                  )}
+                                </>
                               ) : (
                                 <>
                                   {activeTab === 'pending' && (
@@ -761,6 +781,12 @@ export default function HODDashboard() {
                       </div>
                     </div>
                   ))}
+                  {selectedApp.faculty_comment && activeTab === 'rejected' && (
+                    <div className="mt-3 p-2 bg-destructive/10 rounded border border-destructive/20">
+                      <p className="text-xs font-medium text-destructive">Previous Rejection Reason:</p>
+                      <p className="text-sm mt-1">{selectedApp.faculty_comment}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -814,25 +840,36 @@ export default function HODDashboard() {
 
               <div className="flex gap-2">
                 {activeMode === 'teaching' ? (
-                  <>
+                  activeTab === 'rejected' ? (
                     <Button
                       onClick={() => handleTeachingVerification(selectedApp.id, true)}
                       disabled={processing}
                       className="flex-1"
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Approve All Subjects
+                      Re-approve Application
                     </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleTeachingVerification(selectedApp.id, false)}
-                      disabled={processing}
-                      className="flex-1"
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Reject
-                    </Button>
-                  </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => handleTeachingVerification(selectedApp.id, true)}
+                        disabled={processing}
+                        className="flex-1"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Approve All Subjects
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleTeachingVerification(selectedApp.id, false)}
+                        disabled={processing}
+                        className="flex-1"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Reject
+                      </Button>
+                    </>
+                  )
                 ) : activeTab === 'rejected' ? (
                   <Button
                     onClick={() => handleHODVerification(selectedApp.id, true)}
