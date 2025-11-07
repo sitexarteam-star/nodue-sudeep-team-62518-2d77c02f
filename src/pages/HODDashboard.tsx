@@ -213,24 +213,21 @@ export default function HODDashboard() {
       // Check if ALL faculty members have verified this application
       const { data: allAssignments, error: checkError } = await supabase
         .from('application_subject_faculty')
-        .select('faculty_verified, faculty_id')
+        .select('faculty_verified')
         .eq('application_id', applicationId);
 
       if (checkError) throw checkError;
 
       const allVerified = allAssignments?.every(a => a.faculty_verified === true);
-      
-      // Check if HOD is the only faculty assigned (all assignments have same faculty_id as current user)
-      const isOnlyFaculty = allAssignments?.every(a => a.faculty_id === user?.id);
 
-      // If HOD is the only faculty OR all faculty have verified OR if rejected OR if re-approving, update the main application
-      if (isOnlyFaculty || allVerified || !approved || isReapproval) {
+      // If all faculty have verified OR if rejected OR if re-approving, update the main application
+      if (allVerified || !approved || isReapproval) {
         const { error: appError } = await supabase
           .from('applications')
           .update({
-            faculty_verified: approved && (allVerified || isOnlyFaculty),
+            faculty_verified: approved && allVerified,
             faculty_comment: comment || null,
-            status: !approved ? 'rejected' : ((allVerified || isOnlyFaculty) ? 'faculty_verified' : 'college_office_verified'),
+            status: !approved ? 'rejected' : (allVerified ? 'faculty_verified' : 'college_office_verified'),
             updated_at: new Date().toISOString()
           })
           .eq('id', applicationId);
@@ -242,7 +239,7 @@ export default function HODDashboard() {
           ? `Your application was rejected by faculty (${profile?.name}). Reason: ${comment || 'Not specified'}`
           : isReapproval
             ? `Your previously rejected application has been re-approved by faculty (${profile?.name}). ${comment || ''}`
-            : (allVerified || isOnlyFaculty)
+            : allVerified 
               ? `All faculty members have verified your subjects. Your application is now proceeding to HOD verification.`
               : `Faculty verification in progress.`;
 
@@ -250,7 +247,7 @@ export default function HODDashboard() {
           .from('notifications')
           .insert({
             user_id: selectedApp.student_id,
-            title: !approved ? 'Application Rejected' : isReapproval ? 'Application Re-approved' : (allVerified || isOnlyFaculty) ? 'All Faculty Verified' : 'Faculty Verification Update',
+            title: !approved ? 'Application Rejected' : isReapproval ? 'Application Re-approved' : allVerified ? 'All Faculty Verified' : 'Faculty Verification Update',
             message: notificationMessage,
             type: !approved ? 'rejection' : 'approval',
             related_entity_type: 'application',
@@ -258,7 +255,7 @@ export default function HODDashboard() {
           });
 
         // Notify HOD (for HOD mode verification) when all faculty have verified
-        if (approved && (allVerified || isOnlyFaculty)) {
+        if (approved && allVerified) {
           const { data: hodStaff } = await supabase
             .from('staff_profiles')
             .select('id')
