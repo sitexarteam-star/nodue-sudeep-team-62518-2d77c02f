@@ -421,6 +421,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_bulk_notifications: {
+        Args: { notifications: Json }
+        Returns: undefined
+      }
       create_notification: {
         Args: {
           p_message: string

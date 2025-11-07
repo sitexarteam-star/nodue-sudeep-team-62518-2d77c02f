@@ -36,25 +36,25 @@ export const createNotification = async (params: CreateNotificationParams) => {
 };
 
 export const createBulkNotifications = async (notifications: CreateNotificationParams[]) => {
-  const { data, error } = await (supabase as any)
-    .from('notifications')
-    .insert(
-      notifications.map(n => ({
-        user_id: n.userId,
-        title: n.title,
-        message: n.message,
-        type: n.type,
-        related_entity_type: n.relatedEntityType,
-        related_entity_id: n.relatedEntityId
-      }))
-    );
+  const notificationData = notifications.map(n => ({
+    user_id: n.userId,
+    title: n.title,
+    message: n.message,
+    type: n.type,
+    related_entity_type: n.relatedEntityType,
+    related_entity_id: n.relatedEntityId
+  }));
+
+  const { error } = await (supabase as any).rpc('create_bulk_notifications', {
+    notifications: notificationData
+  });
 
   if (error) {
     console.error('Error creating bulk notifications:', error);
     return null;
   }
 
-  return data;
+  return true;
 };
 
 export const formatNotificationTime = (date: string | Date) => {

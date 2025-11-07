@@ -298,9 +298,9 @@ const SubmitNoDueForm = () => {
 
         console.log('Notifying library staff:', libraryStaff.length, 'staff members');
         
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert(libraryNotifications);
+        const { error: notificationError } = await supabase.rpc('create_bulk_notifications', {
+          notifications: libraryNotifications
+        });
 
         if (notificationError) {
           console.error('Failed to notify library staff:', notificationError);
