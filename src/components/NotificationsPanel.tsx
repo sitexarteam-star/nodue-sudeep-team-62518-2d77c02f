@@ -14,15 +14,17 @@ interface NotificationsPanelProps {
 
 const NotificationsPanel = ({ onClose }: NotificationsPanelProps) => {
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
-  const { user } = useAuth();
+  const { userRoles } = useAuth();
   
   const recentNotifications = notifications.slice(0, 10);
 
   // Determine notifications route based on user role
   const getNotificationsRoute = () => {
-    if (!user?.role) return '/admin/notifications';
+    if (!userRoles || userRoles.length === 0) return '/admin/notifications';
     
-    switch (user.role.toLowerCase()) {
+    const role = userRoles[0];
+    
+    switch (role.toLowerCase()) {
       case 'student':
         return '/student/notifications';
       case 'library':
