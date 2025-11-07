@@ -347,33 +347,6 @@ export default function HODDashboard() {
           related_entity_id: applicationId
         });
 
-      // Notify Lab Instructor when HOD approves
-      if (approved) {
-        const { data: labInstructors } = await supabase
-          .rpc('get_users_by_role', { role_name: 'lab_instructor' });
-
-        if (labInstructors && labInstructors.length > 0) {
-          const { data: deptLabInstructors } = await supabase
-            .from('staff_profiles')
-            .select('id')
-            .eq('department', selectedApp.profiles.department)
-            .in('id', labInstructors.map(li => li.user_id))
-            .eq('is_active', true);
-
-          if (deptLabInstructors && deptLabInstructors.length > 0) {
-            const labNotifications = deptLabInstructors.map(instructor => ({
-              user_id: instructor.id,
-              title: 'Application Approved by HOD',
-              message: `${selectedApp.profiles.name} (${selectedApp.profiles.usn}) from ${selectedApp.profiles.department} has been approved by HOD. Awaiting lab charge payment verification.`,
-              type: 'info' as const,
-              related_entity_type: 'application',
-              related_entity_id: applicationId
-            }));
-
-            await supabase.from('notifications').insert(labNotifications);
-          }
-        }
-      }
 
       toast({
         title: "Success!",
