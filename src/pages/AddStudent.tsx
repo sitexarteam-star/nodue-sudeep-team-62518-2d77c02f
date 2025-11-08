@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, UserPlus, Trash2, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import DashboardHeader from "@/components/DashboardHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -23,6 +23,7 @@ interface StudentData {
 const AddStudent = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   
   const [selectedBatch, setSelectedBatch] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -30,9 +31,18 @@ const AddStudent = () => {
   const [newStudent, setNewStudent] = useState({ name: '', usn: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingStudents, setExistingStudents] = useState<any[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
 
-  const batches = ['2021-25', '2022-26', '2023-27', '2024-28'];
   const departments = ['MECH', 'CSE', 'CIVIL', 'EC', 'AIML', 'CD'];
+
+  // Fetch batches and handle URL parameter
+  useEffect(() => {
+    fetchBatches();
+    const batchParam = searchParams.get('batch');
+    if (batchParam) {
+      setSelectedBatch(batchParam);
+    }
+  }, [searchParams]);
 
   // Fetch existing students when batch and department are selected
   useEffect(() => {
@@ -40,6 +50,20 @@ const AddStudent = () => {
       fetchExistingStudents();
     }
   }, [selectedBatch, selectedDepartment]);
+
+  const fetchBatches = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('batches')
+        .select('name')
+        .order('start_year', { ascending: false });
+
+      if (error) throw error;
+      setBatches(data?.map((b: any) => b.name) || []);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+    }
+  };
 
   const fetchExistingStudents = async () => {
     try {
