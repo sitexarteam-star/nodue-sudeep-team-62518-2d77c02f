@@ -67,6 +67,29 @@ const Login = () => {
         return;
       }
 
+      // For students, verify their batch exists in the system
+      if (role === 'student') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('batch')
+          .eq('id', data.session.user.id)
+          .maybeSingle();
+
+        if (profile?.batch) {
+          const { data: batchExists } = await supabase
+            .from('batches')
+            .select('id')
+            .eq('name', profile.batch)
+            .maybeSingle();
+
+          if (!batchExists) {
+            await supabase.auth.signOut();
+            toast.error('Your batch is not registered in the system. Please contact the administrator.');
+            return;
+          }
+        }
+      }
+
       // Check if profile is completed
       const profileTable = role === 'student' ? 'profiles' : 'staff_profiles';
       const { data: profileData } = await supabase
