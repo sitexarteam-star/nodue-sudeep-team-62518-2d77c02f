@@ -39,6 +39,12 @@ serve(async (req) => {
       }
     );
 
+    // Create service role client for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Get authenticated user
     const {
       data: { user },
@@ -151,15 +157,15 @@ serve(async (req) => {
       );
     }
 
-    // Verify faculty exist
+    // Verify faculty exist (use admin client to bypass RLS)
     const facultyIds = submission.subjects.map(s => s.faculty_id);
-    const { data: faculty, error: facultyError } = await supabaseClient
+    const { data: faculty, error: facultyError } = await supabaseAdmin
       .from('staff_profiles')
       .select('id')
       .in('id', facultyIds)
       .eq('is_active', true);
 
-    if (facultyError || faculty.length !== facultyIds.length) {
+    if (facultyError || !faculty || faculty.length !== facultyIds.length) {
       console.error('Faculty verification error:', facultyError);
       return new Response(
         JSON.stringify({ error: 'One or more faculty members are invalid or inactive' }),
@@ -222,8 +228,8 @@ serve(async (req) => {
       },
     });
 
-    // Send notification to library staff
-    const { data: libraryStaff } = await supabaseClient.rpc('get_users_by_role', {
+    // Send notification to library staff (use admin client to bypass RLS)
+    const { data: libraryStaff } = await supabaseAdmin.rpc('get_users_by_role', {
       role_name: 'library',
     });
 
@@ -237,7 +243,7 @@ serve(async (req) => {
         related_entity_id: appData.id,
       }));
 
-      await supabaseClient.rpc('create_bulk_notifications', {
+      await supabaseAdmin.rpc('create_bulk_notifications', {
         notifications,
       });
     }
