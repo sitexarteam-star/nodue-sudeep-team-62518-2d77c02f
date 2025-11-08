@@ -362,12 +362,6 @@ const SubmitNoDueForm = () => {
                 >
                   View Dashboard
                 </Button>
-                <Button
-                  onClick={() => navigate('/application-tracker')}
-                  variant="outline"
-                >
-                  Track Application
-                </Button>
               </div>
             </CardContent>
           </Card>
