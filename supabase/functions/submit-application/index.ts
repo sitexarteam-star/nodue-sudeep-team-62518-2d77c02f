@@ -153,6 +153,7 @@ serve(async (req) => {
     }
 
     // Check for duplicate application
+    console.log('Checking for duplicate application...');
     const { data: existingApp, error: dupCheckError } = await supabaseClient
       .from('applications')
       .select('id')
@@ -166,13 +167,16 @@ serve(async (req) => {
     }
 
     if (existingApp) {
+      console.log('Duplicate application found');
       return new Response(
         JSON.stringify({ error: 'You have already submitted an application for this semester and batch' }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log('No duplicate application found');
 
     // Verify subjects exist
+    console.log('Verifying subjects...');
     const subjectIds = submission.subjects.map(s => s.subject_id);
     const { data: subjects, error: subjectsError } = await supabaseClient
       .from('subjects')
@@ -181,13 +185,16 @@ serve(async (req) => {
 
     if (subjectsError || subjects.length !== subjectIds.length) {
       console.error('Subject verification error:', subjectsError);
+      console.error('Expected subjects:', subjectIds.length, 'Found:', subjects?.length || 0);
       return new Response(
         JSON.stringify({ error: 'One or more subjects are invalid' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log('All subjects verified');
 
     // Verify faculty exist (use admin client to bypass RLS)
+    console.log('Verifying faculty...');
     const facultyIds = submission.subjects.map(s => s.faculty_id);
     const { data: faculty, error: facultyError } = await supabaseAdmin
       .from('staff_profiles')
@@ -197,13 +204,16 @@ serve(async (req) => {
 
     if (facultyError || !faculty || faculty.length !== facultyIds.length) {
       console.error('Faculty verification error:', facultyError);
+      console.error('Expected faculty:', facultyIds.length, 'Found:', faculty?.length || 0);
       return new Response(
         JSON.stringify({ error: 'One or more faculty members are invalid or inactive' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log('All faculty verified');
 
     // Create application
+    console.log('Creating application...');
     const { data: appData, error: appError } = await supabaseClient
       .from('applications')
       .insert({
@@ -219,12 +229,14 @@ serve(async (req) => {
     if (appError) {
       console.error('Application creation error:', appError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create application' }),
+        JSON.stringify({ error: 'Failed to create application: ' + appError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log('Application created with ID:', appData.id);
 
     // Create subject-faculty mappings
+    console.log('Creating subject-faculty mappings...');
     const mappings = submission.subjects.map(sf => ({
       application_id: appData.id,
       subject_id: sf.subject_id,
@@ -241,10 +253,11 @@ serve(async (req) => {
       // Rollback application creation
       await supabaseClient.from('applications').delete().eq('id', appData.id);
       return new Response(
-        JSON.stringify({ error: 'Failed to create subject-faculty mappings' }),
+        JSON.stringify({ error: 'Failed to create subject-faculty mappings: ' + mappingError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log('Subject-faculty mappings created successfully');
 
     // Create audit log
     await supabaseClient.rpc('create_audit_log', {

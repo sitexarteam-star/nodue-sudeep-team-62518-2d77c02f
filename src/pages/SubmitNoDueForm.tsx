@@ -247,17 +247,28 @@ const SubmitNoDueForm = () => {
         }
       });
 
-      if (error) throw error;
+      // Check for function invocation error or error in response data
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error('Failed to submit application. Please try again.');
+      }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to submit application');
+      // Check if the edge function returned an error in the data
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.success) {
+        throw new Error('Application submission failed. Please try again.');
       }
 
       toast.success('Application submitted successfully!');
       navigate('/dashboard/student');
     } catch (error: any) {
       console.error('Error submitting application:', error);
-      toast.error(error.message || 'Failed to submit application');
+      // Display the specific error message from the edge function
+      const errorMessage = error.message || 'Failed to submit application. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
