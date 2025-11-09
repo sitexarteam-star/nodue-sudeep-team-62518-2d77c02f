@@ -18,6 +18,25 @@ const DashboardLayout = ({ children, title, role, userName = "User" }: Dashboard
     navigate('/');
   };
 
+  const handleNotifications = () => {
+    // Map role to notification route
+    const notificationRoutes: Record<string, string> = {
+      'counsellor': '/counsellor/notifications',
+      'class_advisor': '/class-advisor/notifications',
+      'faculty': '/faculty/notifications',
+      'hod': '/hod/notifications',
+      'library': '/library/notifications',
+      'hostel': '/hostel/notifications',
+      'lab_instructor': '/lab-instructor/notifications',
+      'college_office': '/college-office/notifications',
+      'admin': '/admin/notifications',
+      'student': '/student/notifications',
+    };
+    
+    const route = notificationRoutes[role] || '/notifications';
+    navigate(route);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -35,11 +54,8 @@ const DashboardLayout = ({ children, title, role, userName = "User" }: Dashboard
             </div>
             
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative" onClick={handleNotifications}>
                 <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground">
-                  3
-                </Badge>
               </Button>
               
               <div className="flex items-center gap-3">
