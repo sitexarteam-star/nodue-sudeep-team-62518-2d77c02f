@@ -1,7 +1,5 @@
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getNotificationIcon, getNotificationColor, formatNotificationTime } from "@/lib/notifications";
@@ -61,36 +59,6 @@ const NotificationsPanel = ({ onClose, role }: NotificationsPanelProps) => {
 
   const filteredNotifications = getRoleSpecificNotifications();
   const recentNotifications = filteredNotifications.slice(0, 10);
-
-  // Determine notifications route based on user role or role prop
-  const getNotificationsRoute = () => {
-    const effectiveRole = role || (userRoles && userRoles.length > 0 ? userRoles[0] : null);
-    
-    if (!effectiveRole) return '/admin/notifications';
-    
-    switch (effectiveRole.toLowerCase()) {
-      case 'student':
-        return '/student/notifications';
-      case 'library':
-        return '/library/notifications';
-      case 'hostel':
-        return '/hostel/notifications';
-      case 'lab_instructor':
-        return '/lab-instructor/notifications';
-      case 'college_office':
-        return '/college-office/notifications';
-      case 'faculty':
-        return '/faculty/notifications';
-      case 'hod':
-        return '/hod/notifications';
-      case 'counsellor':
-        return '/counsellor/notifications';
-      case 'class_advisor':
-        return '/class-advisor/notifications';
-      default:
-        return '/admin/notifications';
-    }
-  };
 
   const handleNotificationClick = (id: string, read: boolean) => {
     if (!read) {
@@ -164,24 +132,6 @@ const NotificationsPanel = ({ onClose, role }: NotificationsPanelProps) => {
           </div>
         )}
       </ScrollArea>
-
-      {recentNotifications.length > 0 && (
-        <>
-          <Separator />
-          <div className="p-2">
-            <Button 
-              variant="ghost" 
-              className="w-full" 
-              asChild
-              onClick={onClose}
-            >
-              <Link to={getNotificationsRoute()}>
-                View all notifications
-              </Link>
-            </Button>
-          </div>
-        </>
-      )}
     </div>
   );
 };
