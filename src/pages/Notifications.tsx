@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardHeader from "@/components/DashboardHeader";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Trash2, Check, CheckCheck } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { 
@@ -28,17 +28,69 @@ import {
 const Notifications = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
 
-  const filteredNotifications = notifications.filter(n => {
+  // Determine current role from URL path
+  const getCurrentRole = () => {
+    if (location.pathname.includes('/counsellor/')) return 'counsellor';
+    if (location.pathname.includes('/class-advisor/')) return 'class_advisor';
+    if (location.pathname.includes('/faculty/')) return 'faculty';
+    if (location.pathname.includes('/hod/')) return 'hod';
+    if (location.pathname.includes('/library/')) return 'library';
+    if (location.pathname.includes('/hostel/')) return 'hostel';
+    if (location.pathname.includes('/lab-instructor/')) return 'lab_instructor';
+    if (location.pathname.includes('/college-office/')) return 'college_office';
+    return null;
+  };
+
+  const currentRole = getCurrentRole();
+
+  // Filter notifications by role context
+  const roleFilteredNotifications = notifications.filter(n => {
+    if (!currentRole) return true; // Show all for admin/student
+    
+    const title = n.title.toLowerCase();
+    const message = n.message.toLowerCase();
+    
+    // Match notifications to roles based on title and message content
+    if (currentRole === 'counsellor') {
+      return title.includes('counsellor') || message.includes('counsellor');
+    }
+    if (currentRole === 'class_advisor') {
+      return title.includes('class advisor') || message.includes('class advisor');
+    }
+    if (currentRole === 'faculty') {
+      return title.includes('faculty') && !title.includes('counsellor') && !title.includes('class advisor');
+    }
+    if (currentRole === 'hod') {
+      return title.includes('hod') || message.includes('hod');
+    }
+    if (currentRole === 'library') {
+      return title.includes('library') || message.includes('library');
+    }
+    if (currentRole === 'hostel') {
+      return title.includes('hostel') || message.includes('hostel');
+    }
+    if (currentRole === 'lab_instructor') {
+      return title.includes('lab') || message.includes('lab');
+    }
+    if (currentRole === 'college_office') {
+      return title.includes('college office') || message.includes('college office');
+    }
+    
+    return true;
+  });
+
+  const filteredNotifications = roleFilteredNotifications.filter(n => {
     if (filter === 'unread') return !n.read;
     if (filter === 'read') return n.read;
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = roleFilteredNotifications.filter(n => !n.read).length;
 
   const handleDelete = () => {
     if (deleteId) {
