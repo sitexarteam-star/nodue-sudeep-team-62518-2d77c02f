@@ -19,21 +19,23 @@ const DashboardLayout = ({ children, title, role, userName = "User" }: Dashboard
   const { notifications, unreadCount } = useNotifications();
 
   const getRoleSpecificNotifications = () => {
+    if (!notifications || notifications.length === 0) return [];
+    
     return notifications.filter(n => {
-      const titleLower = n.title.toLowerCase();
-      const messageLower = n.message.toLowerCase();
+      const titleLower = n.title?.toLowerCase() || '';
+      const messageLower = n.message?.toLowerCase() || '';
       
       switch(role) {
         case 'counsellor':
-          return titleLower.includes('ready for counsellor verification') || 
-                 titleLower === 'application ready for counsellor verification';
+          return titleLower.includes('counsellor') && 
+                 (titleLower.includes('ready for') || titleLower.includes('verification'));
         
         case 'class_advisor':
-          return titleLower.includes('ready for class advisor verification') ||
-                 titleLower === 'application ready for class advisor verification';
+          return titleLower.includes('class advisor') && 
+                 (titleLower.includes('ready for') || titleLower.includes('verification'));
         
         case 'faculty':
-          return titleLower.includes('faculty') && 
+          return (titleLower.includes('faculty') || messageLower.includes('faculty')) && 
                  !titleLower.includes('counsellor') && 
                  !titleLower.includes('class advisor');
         
