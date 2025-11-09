@@ -22,6 +22,8 @@ const ApplicationTracker = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [applicationToDelete, setApplicationToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const departments = ['MECH', 'CSE', 'CIVIL', 'EC', 'AIML', 'CD'];
 
@@ -132,6 +134,39 @@ const ApplicationTracker = () => {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteAllApplications = async () => {
+    if (!selectedBatch || !selectedDepartment) return;
+    
+    setIsDeletingAll(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-all-applications', {
+        body: { 
+          batch: selectedBatch, 
+          department: selectedDepartment 
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Deleted ${data.deletedApplications} applications successfully`,
+      });
+
+      fetchApplications();
+      setDeleteAllDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting all applications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete all applications",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -274,8 +309,22 @@ const ApplicationTracker = () => {
             {/* Applications Table */}
             <Card className="shadow-md">
               <CardHeader>
-                <CardTitle>Applications - {selectedBatch} / {selectedDepartment}</CardTitle>
-                <CardDescription>No-due certificate applications from selected batch and department</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Applications - {selectedBatch} / {selectedDepartment}</CardTitle>
+                    <CardDescription>No-due certificate applications from selected batch and department</CardDescription>
+                  </div>
+                  {applications.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteAllDialogOpen(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete All
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -380,6 +429,53 @@ const ApplicationTracker = () => {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete All Confirmation Dialog */}
+        <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete All Applications</AlertDialogTitle>
+              <AlertDialogDescription>
+                <div className="space-y-4">
+                  <p className="text-foreground font-medium">
+                    Are you sure you want to delete ALL applications for:
+                  </p>
+                  <div className="p-4 bg-muted rounded-lg space-y-2">
+                    <p className="text-sm">
+                      <span className="font-medium">Batch:</span> {selectedBatch}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Department:</span> {selectedDepartment}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Total Applications:</span> {applications.length}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive font-medium mb-2">⚠️ WARNING: This action cannot be undone!</p>
+                    <p className="text-sm text-destructive mb-2">This will permanently delete:</p>
+                    <ul className="text-sm text-destructive ml-4 list-disc space-y-1">
+                      <li>All {applications.length} applications in {selectedBatch} - {selectedDepartment}</li>
+                      <li>All related faculty assignments</li>
+                      <li>All related notifications</li>
+                      <li>All verification progress and comments</li>
+                    </ul>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAllApplications}
+                disabled={isDeletingAll}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeletingAll ? "Deleting..." : `Delete All ${applications.length} Applications`}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
