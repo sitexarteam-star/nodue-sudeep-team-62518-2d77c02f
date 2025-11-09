@@ -10,21 +10,65 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface NotificationsPanelProps {
   onClose?: () => void;
+  role?: string;
 }
 
-const NotificationsPanel = ({ onClose }: NotificationsPanelProps) => {
+const NotificationsPanel = ({ onClose, role }: NotificationsPanelProps) => {
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
   const { userRoles } = useAuth();
   
-  const recentNotifications = notifications.slice(0, 10);
+  const getRoleSpecificNotifications = () => {
+    if (!role) return notifications;
+    
+    return notifications.filter(n => {
+      const titleLower = n.title.toLowerCase();
+      const messageLower = n.message.toLowerCase();
+      
+      switch(role) {
+        case 'counsellor':
+          return titleLower.includes('ready for counsellor verification') || 
+                 titleLower === 'application ready for counsellor verification';
+        
+        case 'class_advisor':
+          return titleLower.includes('ready for class advisor verification') ||
+                 titleLower === 'application ready for class advisor verification';
+        
+        case 'faculty':
+          return titleLower.includes('faculty') && 
+                 !titleLower.includes('counsellor') && 
+                 !titleLower.includes('class advisor');
+        
+        case 'hod':
+          return titleLower.includes('hod') || messageLower.includes('hod');
+        
+        case 'library':
+          return titleLower.includes('library') || messageLower.includes('library');
+        
+        case 'hostel':
+          return titleLower.includes('hostel') || messageLower.includes('hostel');
+        
+        case 'lab_instructor':
+          return titleLower.includes('lab') || messageLower.includes('lab');
+        
+        case 'college_office':
+          return titleLower.includes('college office') || messageLower.includes('college office');
+        
+        default:
+          return true; // Show all for admin/student
+      }
+    });
+  };
 
-  // Determine notifications route based on user role
+  const filteredNotifications = getRoleSpecificNotifications();
+  const recentNotifications = filteredNotifications.slice(0, 10);
+
+  // Determine notifications route based on user role or role prop
   const getNotificationsRoute = () => {
-    if (!userRoles || userRoles.length === 0) return '/admin/notifications';
+    const effectiveRole = role || (userRoles && userRoles.length > 0 ? userRoles[0] : null);
     
-    const role = userRoles[0];
+    if (!effectiveRole) return '/admin/notifications';
     
-    switch (role.toLowerCase()) {
+    switch (effectiveRole.toLowerCase()) {
       case 'student':
         return '/student/notifications';
       case 'library':
@@ -39,6 +83,10 @@ const NotificationsPanel = ({ onClose }: NotificationsPanelProps) => {
         return '/faculty/notifications';
       case 'hod':
         return '/hod/notifications';
+      case 'counsellor':
+        return '/counsellor/notifications';
+      case 'class_advisor':
+        return '/class-advisor/notifications';
       default:
         return '/admin/notifications';
     }

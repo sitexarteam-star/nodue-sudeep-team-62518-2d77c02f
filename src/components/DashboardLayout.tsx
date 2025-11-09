@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, LogOut, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/hooks/useNotifications";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import NotificationsPanel from "@/components/NotificationsPanel";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -63,25 +65,6 @@ const DashboardLayout = ({ children, title, role, userName = "User" }: Dashboard
     navigate('/');
   };
 
-  const handleNotifications = () => {
-    // Map role to notification route
-    const notificationRoutes: Record<string, string> = {
-      'counsellor': '/counsellor/notifications',
-      'class_advisor': '/class-advisor/notifications',
-      'faculty': '/faculty/notifications',
-      'hod': '/hod/notifications',
-      'library': '/library/notifications',
-      'hostel': '/hostel/notifications',
-      'lab_instructor': '/lab-instructor/notifications',
-      'college_office': '/college-office/notifications',
-      'admin': '/admin/notifications',
-      'student': '/student/notifications',
-    };
-    
-    const route = notificationRoutes[role] || '/notifications';
-    navigate(route);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -99,17 +82,24 @@ const DashboardLayout = ({ children, title, role, userName = "User" }: Dashboard
             </div>
             
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative" onClick={handleNotifications}>
-                <Bell className="h-5 w-5" />
-                {roleSpecificUnreadCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  >
-                    {roleSpecificUnreadCount > 9 ? '9+' : roleSpecificUnreadCount}
-                  </Badge>
-                )}
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {roleSpecificUnreadCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      >
+                        {roleSpecificUnreadCount > 9 ? '9+' : roleSpecificUnreadCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="p-0 w-auto">
+                  <NotificationsPanel role={role} />
+                </PopoverContent>
+              </Popover>
               
               <div className="flex items-center gap-3">
                 <div className="text-right hidden md:block">
