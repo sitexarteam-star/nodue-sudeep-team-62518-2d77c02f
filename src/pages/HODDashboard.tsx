@@ -145,6 +145,7 @@ export default function HODDashboard() {
             subject_id: assignment.subject_id,
             subject_name: assignment.subjects?.name,
             subject_code: assignment.subjects?.code,
+            faculty_id: assignment.faculty_id,
             faculty_verified: assignment.faculty_verified,
             verification_status: assignment.verification_status,
             faculty_comment: assignment.faculty_comment,
