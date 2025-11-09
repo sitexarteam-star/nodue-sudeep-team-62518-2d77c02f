@@ -360,6 +360,8 @@ const StudentDashboard = () => {
           !currentApplication.hostel_verified && profile?.student_type === 'hostel',
           !currentApplication.college_office_verified,
           !currentApplication.faculty_verified,
+          !currentApplication.counsellor_verified,
+          !currentApplication.class_advisor_verified,
           !currentApplication.hod_verified,
           !currentApplication.payment_verified,
           !currentApplication.lab_verified
