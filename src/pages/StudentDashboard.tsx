@@ -321,10 +321,14 @@ const StudentDashboard = () => {
     );
   };
 
-  const calculateProgress = (app: Application) => {
-    const allFacultyApproved = app.faculty_assignments?.every(
+  const calculateFacultyVerified = (app: Application) => {
+    return app.faculty_assignments?.every(
       a => a.verification_status === 'approved'
     ) ?? false;
+  };
+
+  const calculateProgress = (app: Application) => {
+    const allFacultyApproved = calculateFacultyVerified(app);
     
     const steps = [
       app.library_verified,
@@ -359,7 +363,7 @@ const StudentDashboard = () => {
           !currentApplication.library_verified,
           !currentApplication.hostel_verified && profile?.student_type === 'hostel',
           !currentApplication.college_office_verified,
-          !currentApplication.faculty_verified,
+          !calculateFacultyVerified(currentApplication),
           !currentApplication.counsellor_verified,
           !currentApplication.class_advisor_verified,
           !currentApplication.hod_verified,
@@ -398,7 +402,7 @@ const StudentDashboard = () => {
     },
     { 
       name: "Faculty", 
-      verified: currentApplication.faculty_verified, 
+      verified: calculateFacultyVerified(currentApplication), 
       required: true,
       comment: currentApplication.faculty_comment 
     },
