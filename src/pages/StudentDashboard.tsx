@@ -69,6 +69,8 @@ interface Application {
   hostel_verified: boolean;
   college_office_verified: boolean;
   faculty_verified: boolean;
+  counsellor_verified: boolean;
+  class_advisor_verified: boolean;
   hod_verified: boolean;
   payment_verified: boolean;
   lab_verified: boolean;
@@ -78,6 +80,8 @@ interface Application {
   hostel_comment?: string;
   college_office_comment?: string;
   faculty_comment?: string;
+  counsellor_comment?: string;
+  class_advisor_comment?: string;
   hod_comment?: string;
   payment_comment?: string;
   lab_comment?: string;
@@ -327,6 +331,8 @@ const StudentDashboard = () => {
       profile?.student_type === 'hostel' ? app.hostel_verified : true,
       app.college_office_verified,
       allFacultyApproved,
+      app.counsellor_verified,
+      app.class_advisor_verified,
       app.hod_verified,
       app.payment_verified,
       app.lab_verified
@@ -393,6 +399,18 @@ const StudentDashboard = () => {
       verified: currentApplication.faculty_verified, 
       required: true,
       comment: currentApplication.faculty_comment 
+    },
+    { 
+      name: "Counsellor", 
+      verified: currentApplication.counsellor_verified, 
+      required: true,
+      comment: currentApplication.counsellor_comment 
+    },
+    { 
+      name: "Class Advisor", 
+      verified: currentApplication.class_advisor_verified, 
+      required: true,
+      comment: currentApplication.class_advisor_comment 
     },
     { 
       name: "HOD", 

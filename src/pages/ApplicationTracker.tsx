@@ -137,16 +137,19 @@ const ApplicationTracker = () => {
 
   const calculateProgress = (app: any) => {
     let completed = 0;
-    let total = 5; // Base verifications (library, college_office, hod, payment, lab)
+    let total = 8; // Base verifications (library, college_office, faculty, counsellor, class_advisor, hod, payment, lab)
     
     // Add hostel to total only if student is a hostel student
     if (app.profiles?.student_type === 'hostel') {
-      total = 6;
+      total = 9;
       if (app.hostel_verified) completed++;
     }
     
     if (app.library_verified) completed++;
     if (app.college_office_verified) completed++;
+    if (app.faculty_verified) completed++;
+    if (app.counsellor_verified) completed++;
+    if (app.class_advisor_verified) completed++;
     if (app.hod_verified) completed++;
     if (app.payment_verified) completed++;
     if (app.lab_verified) completed++;
