@@ -165,15 +165,47 @@ const Notifications = () => {
     }
   };
 
+  const handleBackNavigation = () => {
+    const dashboardRoutes: Record<string, string> = {
+      'counsellor': '/counsellor/dashboard',
+      'class_advisor': '/class-advisor/dashboard',
+      'faculty': '/faculty/dashboard',
+      'hod': '/hod/dashboard',
+      'library': '/library/dashboard',
+      'hostel': '/hostel/dashboard',
+      'lab_instructor': '/lab-instructor/dashboard',
+      'college_office': '/college-office/dashboard',
+      'admin': '/admin/dashboard',
+      'student': '/student/dashboard',
+    };
+    
+    const route = currentRole ? dashboardRoutes[currentRole] : '/';
+    navigate(route);
+  };
+
+  const getBackButtonText = () => {
+    const roleTitles: Record<string, string> = {
+      'counsellor': 'Back to Counsellor Dashboard',
+      'class_advisor': 'Back to Class Advisor Dashboard',
+      'faculty': 'Back to Faculty Dashboard',
+      'hod': 'Back to HOD Dashboard',
+      'library': 'Back to Library Dashboard',
+      'hostel': 'Back to Hostel Dashboard',
+      'lab_instructor': 'Back to Lab Instructor Dashboard',
+      'college_office': 'Back to College Office Dashboard',
+    };
+    return currentRole ? roleTitles[currentRole] : 'Back';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} title="Notifications" />
       
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+          <Button variant="ghost" onClick={handleBackNavigation}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {getBackButtonText()}
           </Button>
           
           {unreadCount > 0 && (
@@ -244,21 +276,37 @@ const Notifications = () => {
                                       <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                                     )}
                                   </div>
-                                  <Badge variant={badgeVariant} className="text-xs">
+                                   <Badge variant={badgeVariant} className="text-xs">
                                     {notification.type}
                                   </Badge>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteId(notification.id);
-                                  }}
-                                  className="flex-shrink-0"
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                  {!notification.read && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        markAsRead(notification.id);
+                                      }}
+                                      className="flex-shrink-0"
+                                      title="Mark as read"
+                                    >
+                                      <Check className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteId(notification.id);
+                                    }}
+                                    className="flex-shrink-0"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
                               </div>
                               
                               <p className="text-sm text-foreground mb-3">
