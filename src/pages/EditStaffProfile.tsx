@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { ArrowLeft } from "lucide-react";
 
 const EditStaffProfile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, userRoles, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -31,6 +32,14 @@ const EditStaffProfile = () => {
     office_location: "",
     employee_id: ""
   });
+
+  // Determine current role based on URL path
+  const getCurrentRole = () => {
+    if (location.pathname.includes('/counsellor/')) return 'counsellor';
+    if (location.pathname.includes('/class-advisor/')) return 'class_advisor';
+    if (location.pathname.includes('/staff/')) return userRoles[0];
+    return userRoles[0];
+  };
 
   useEffect(() => {
     if (!user) {
@@ -93,8 +102,9 @@ const EditStaffProfile = () => {
 
       toast.success('Profile updated successfully!');
       await refreshProfile();
-      const rolePrefix = userRoles[0] === 'counsellor' ? '/counsellor' 
-        : userRoles[0] === 'class_advisor' ? '/class-advisor' 
+      const currentRole = getCurrentRole();
+      const rolePrefix = currentRole === 'counsellor' ? '/counsellor' 
+        : currentRole === 'class_advisor' ? '/class-advisor' 
         : '/staff';
       navigate(`${rolePrefix}/profile`);
     } catch (error: any) {
@@ -120,8 +130,9 @@ const EditStaffProfile = () => {
           variant="ghost"
           className="mb-4"
           onClick={() => {
-            const rolePrefix = userRoles[0] === 'counsellor' ? '/counsellor' 
-              : userRoles[0] === 'class_advisor' ? '/class-advisor' 
+            const currentRole = getCurrentRole();
+            const rolePrefix = currentRole === 'counsellor' ? '/counsellor' 
+              : currentRole === 'class_advisor' ? '/class-advisor' 
               : '/staff';
             navigate(`${rolePrefix}/profile`);
           }}
@@ -234,8 +245,9 @@ const EditStaffProfile = () => {
                   type="button" 
                   variant="outline" 
                   onClick={() => {
-                    const rolePrefix = userRoles[0] === 'counsellor' ? '/counsellor' 
-                      : userRoles[0] === 'class_advisor' ? '/class-advisor' 
+                    const currentRole = getCurrentRole();
+                    const rolePrefix = currentRole === 'counsellor' ? '/counsellor' 
+                      : currentRole === 'class_advisor' ? '/class-advisor' 
                       : '/staff';
                     navigate(`${rolePrefix}/profile`);
                   }}

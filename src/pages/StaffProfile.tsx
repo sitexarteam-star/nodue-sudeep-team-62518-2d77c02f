@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,9 +23,18 @@ interface StaffProfile {
 
 const StaffProfile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, userRoles } = useAuth();
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Determine current role based on URL path
+  const getCurrentRole = () => {
+    if (location.pathname.includes('/counsellor/')) return 'counsellor';
+    if (location.pathname.includes('/class-advisor/')) return 'class_advisor';
+    if (location.pathname.includes('/staff/')) return userRoles[0];
+    return userRoles[0];
+  };
 
   useEffect(() => {
     if (!user) {
@@ -93,7 +102,10 @@ const StaffProfile = () => {
         <Card className="w-full max-w-md">
           <CardContent className="p-6">
             <p className="text-center mb-4">Profile not found</p>
-            <Button onClick={() => navigate(`/dashboard/${userRoles[0]}`)} className="w-full">
+            <Button onClick={() => {
+              const currentRole = getCurrentRole();
+              navigate(`/dashboard/${currentRole}`);
+            }} className="w-full">
               Back to Dashboard
             </Button>
           </CardContent>
@@ -117,8 +129,9 @@ const StaffProfile = () => {
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold">My Profile</h1>
           <Button onClick={() => {
-            const rolePrefix = userRoles[0] === 'counsellor' ? '/counsellor' 
-              : userRoles[0] === 'class_advisor' ? '/class-advisor' 
+            const currentRole = getCurrentRole();
+            const rolePrefix = currentRole === 'counsellor' ? '/counsellor' 
+              : currentRole === 'class_advisor' ? '/class-advisor' 
               : '/staff';
             navigate(`${rolePrefix}/profile/edit`);
           }}>
@@ -210,7 +223,10 @@ const StaffProfile = () => {
         </div>
 
         <div className="mt-6">
-          <Button variant="outline" onClick={() => navigate(`/dashboard/${userRoles[0]}`)} className="w-full md:w-auto">
+          <Button variant="outline" onClick={() => {
+            const currentRole = getCurrentRole();
+            navigate(`/dashboard/${currentRole}`);
+          }} className="w-full md:w-auto">
             Back to Dashboard
           </Button>
         </div>
