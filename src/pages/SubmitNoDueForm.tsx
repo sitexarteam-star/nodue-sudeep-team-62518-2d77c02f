@@ -171,11 +171,12 @@ const SubmitNoDueForm = () => {
 
   const fetchCounsellors = async () => {
     try {
-      // Fetch all active faculty from staff_profiles (similar to subject faculty selection)
+      // Fetch only HOD, Assistant Professor, and Associate Professor
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('id, name, designation, department')
         .eq('is_active', true)
+        .in('designation', ['HOD', 'Assistant Professor', 'Associate Professor'])
         .order('designation', { ascending: true })
         .order('department', { ascending: true })
         .order('name', { ascending: true });
@@ -191,11 +192,12 @@ const SubmitNoDueForm = () => {
 
   const fetchClassAdvisors = async () => {
     try {
-      // Fetch all active faculty from staff_profiles (similar to subject faculty selection)
+      // Fetch only HOD, Assistant Professor, and Associate Professor
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('id, name, designation, department')
         .eq('is_active', true)
+        .in('designation', ['HOD', 'Assistant Professor', 'Associate Professor'])
         .order('designation', { ascending: true })
         .order('department', { ascending: true })
         .order('name', { ascending: true });

@@ -172,10 +172,10 @@ serve(async (req) => {
 
     console.log('Verifying counsellor and class advisor...');
 
-    // Verify counsellor exists, is active, and has counsellor role
+    // Verify counsellor exists, is active, and has proper designation
     const { data: counsellor, error: counsellorError } = await supabaseAdmin
       .from('staff_profiles')
-      .select('id, name, is_active')
+      .select('id, name, is_active, designation')
       .eq('id', submission.counsellor_id)
       .eq('is_active', true)
       .single();
@@ -187,38 +187,20 @@ serve(async (req) => {
       );
     }
 
-    // Verify counsellor has the counsellor role
-    const { data: hasCounsellorRole, error: counsellorRoleError } = await supabaseAdmin
-      .rpc('has_role', { 
-        _user_id: submission.counsellor_id, 
-        _role: 'counsellor' 
-      });
-
-    if (counsellorRoleError || !hasCounsellorRole) {
+    // Verify counsellor has proper designation (HOD, Assistant Professor, or Associate Professor)
+    const validDesignations = ['HOD', 'Assistant Professor', 'Associate Professor'];
+    if (!validDesignations.includes(counsellor.designation)) {
       return new Response(
-        JSON.stringify({ error: 'Selected user does not have counsellor role' }),
+        JSON.stringify({ error: 'Counsellor must be HOD, Assistant Professor, or Associate Professor' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify counsellor also has faculty role
-    const { data: counsellorIsFaculty, error: counsellorFacultyError } = await supabaseAdmin
-      .rpc('has_role', { 
-        _user_id: submission.counsellor_id, 
-        _role: 'faculty' 
-      });
 
-    if (counsellorFacultyError || !counsellorIsFaculty) {
-      return new Response(
-        JSON.stringify({ error: 'Counsellor must be a faculty member' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify class advisor exists, is active, and has class_advisor role
+    // Verify class advisor exists, is active, and has proper designation
     const { data: classAdvisor, error: advisorError } = await supabaseAdmin
       .from('staff_profiles')
-      .select('id, name, is_active')
+      .select('id, name, is_active, designation')
       .eq('id', submission.class_advisor_id)
       .eq('is_active', true)
       .single();
@@ -230,30 +212,11 @@ serve(async (req) => {
       );
     }
 
-    // Verify class advisor has the class_advisor role
-    const { data: hasAdvisorRole, error: advisorRoleError } = await supabaseAdmin
-      .rpc('has_role', { 
-        _user_id: submission.class_advisor_id, 
-        _role: 'class_advisor' 
-      });
-
-    if (advisorRoleError || !hasAdvisorRole) {
+    // Verify class advisor has proper designation (HOD, Assistant Professor, or Associate Professor)
+    const validAdvisorDesignations = ['HOD', 'Assistant Professor', 'Associate Professor'];
+    if (!validAdvisorDesignations.includes(classAdvisor.designation)) {
       return new Response(
-        JSON.stringify({ error: 'Selected user does not have class advisor role' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify class advisor also has faculty role
-    const { data: advisorIsFaculty, error: advisorFacultyError } = await supabaseAdmin
-      .rpc('has_role', { 
-        _user_id: submission.class_advisor_id, 
-        _role: 'faculty' 
-      });
-
-    if (advisorFacultyError || !advisorIsFaculty) {
-      return new Response(
-        JSON.stringify({ error: 'Class advisor must be a faculty member' }),
+        JSON.stringify({ error: 'Class advisor must be HOD, Assistant Professor, or Associate Professor' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
