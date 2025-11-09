@@ -574,6 +574,8 @@ export type Database = {
         | "college_office"
         | "hod"
         | "lab_instructor"
+        | "counsellor"
+        | "class_advisor"
       department: "MECH" | "CSE" | "CIVIL" | "EC" | "AIML" | "CD"
       section: "A" | "B"
       student_type: "local" | "hostel"
@@ -714,6 +716,8 @@ export const Constants = {
         "college_office",
         "hod",
         "lab_instructor",
+        "counsellor",
+        "class_advisor",
       ],
       department: ["MECH", "CSE", "CIVIL", "EC", "AIML", "CD"],
       section: ["A", "B"],
