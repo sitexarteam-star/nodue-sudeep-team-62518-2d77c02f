@@ -112,13 +112,13 @@ const Index = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-4xl md:text-6xl font-extrabold text-foreground mb-6 tracking-tight leading-tight">
             Welcome to Nodex
           </h2>
-          <p className="text-lg text-muted-foreground mb-4">
+          <p className="text-xl text-muted-foreground mb-4 font-medium leading-relaxed">
             Streamlined digital No-Due certificate generation and verification system
           </p>
-          <p className="text-muted-foreground">
+          <p className="text-base text-muted-foreground leading-relaxed">
             Select your role below to access your portal
           </p>
         </div>
@@ -136,10 +136,10 @@ const Index = () => {
                   <div className={`${role.color} text-white p-4 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className="h-8 w-8" />
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                  <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors tracking-tight">
                     {role.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {role.description}
                   </p>
                   <Button 
@@ -158,7 +158,7 @@ const Index = () => {
       {/* Features Section */}
       <section className="container mx-auto px-4 py-16 border-t">
         <div className="max-w-7xl mx-auto">
-          <h3 className="text-3xl font-bold text-center text-foreground mb-12">
+          <h3 className="text-3xl md:text-4xl font-extrabold text-center text-foreground mb-12 tracking-tight">
             System Features
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -168,8 +168,8 @@ const Index = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h4 className="text-xl font-semibold mb-2">Multi-Step Verification</h4>
-              <p className="text-muted-foreground">Streamlined approval workflow across all departments</p>
+              <h4 className="text-xl font-bold mb-2 tracking-tight">Multi-Step Verification</h4>
+              <p className="text-muted-foreground leading-relaxed">Streamlined approval workflow across all departments</p>
             </div>
             <div className="text-center">
               <div className="bg-warning/10 text-warning p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -177,8 +177,8 @@ const Index = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
               </div>
-              <h4 className="text-xl font-semibold mb-2">Real-Time Notifications</h4>
-              <p className="text-muted-foreground">Instant updates on application status changes</p>
+              <h4 className="text-xl font-bold mb-2 tracking-tight">Real-Time Notifications</h4>
+              <p className="text-muted-foreground leading-relaxed">Instant updates on application status changes</p>
             </div>
             <div className="text-center">
               <div className="bg-primary/10 text-primary p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -186,8 +186,8 @@ const Index = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h4 className="text-xl font-semibold mb-2">Digital Certificates</h4>
-              <p className="text-muted-foreground">Download verified No-Due certificates instantly</p>
+              <h4 className="text-xl font-bold mb-2 tracking-tight">Digital Certificates</h4>
+              <p className="text-muted-foreground leading-relaxed">Download verified No-Due certificates instantly</p>
             </div>
           </div>
         </div>
