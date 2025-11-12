@@ -123,23 +123,23 @@ const Index = () => {
           </p>
         </div>
         {/* Role Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 max-w-7xl mx-auto">
           {roles.map((role) => {
             const Icon = role.icon;
             return (
               <Card
                 key={role.id}
-                className="p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group border-2 hover:border-primary"
+                className="p-5 hover:shadow-lg transition-all duration-300 cursor-pointer group border-2 hover:border-primary"
                 onClick={() => navigate(`/login/${role.id}`)}
               >
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className={`${role.color} text-white p-4 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="h-8 w-8" />
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <div className={`${role.color} text-white p-3 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="h-7 w-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors tracking-tight">
+                  <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors tracking-tight">
                     {role.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {role.description}
                   </p>
                   <Button 
