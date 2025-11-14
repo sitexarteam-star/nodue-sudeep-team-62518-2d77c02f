@@ -73,14 +73,14 @@ const ClearanceItem = ({
   date: string; 
   comment?: string;
 }) => (
-  <div className="py-1.5">
-    <div className="flex items-center gap-2 mb-1">
+  <div className="py-1">
+    <div className="flex items-center gap-2 mb-0.5">
       <CheckCircle2 className="h-4 w-4 text-green-600" />
       <span className="font-semibold text-foreground text-sm">{name}</span>
     </div>
     <div className="ml-6 text-xs text-muted-foreground">
-      <div>Verified on: {date}</div>
-      <div className="italic">Remarks: {comment || 'No remarks'}</div>
+      <div>{date}</div>
+      <div className="italic">{comment || 'No remarks'}</div>
     </div>
   </div>
 );
@@ -140,70 +140,70 @@ export const NoDueCertificate = ({ application, profile }: NoDueCertificateProps
 
         {/* Clearance Details */}
         <div>
-          <h3 className="text-lg font-bold text-foreground mb-2 uppercase tracking-wide">
+          <h3 className="text-base font-bold text-foreground mb-2 uppercase tracking-wide">
             Clearance Details
           </h3>
           <Separator className="mb-2" />
 
-          <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <ClearanceItem 
-              name="Library Clearance"
+              name="Library"
               date={formatDate(application.updated_at)}
               comment={application.library_comment}
             />
             
             {isHostelStudent && (
               <ClearanceItem 
-                name="Hostel Clearance"
+                name="Hostel"
                 date={formatDate(application.updated_at)}
                 comment={application.hostel_comment}
               />
             )}
             
             <ClearanceItem 
-              name="College Office Clearance"
+              name="College Office"
               date={formatDate(application.updated_at)}
               comment={application.college_office_comment}
             />
             
             <ClearanceItem 
-              name="Faculty Clearance"
+              name="Faculty"
               date={formatDate(application.updated_at)}
               comment={application.faculty_comment}
             />
             
             <ClearanceItem 
-              name="Counsellor Clearance"
+              name="Counsellor"
               date={formatDate(application.updated_at)}
               comment={application.counsellor_comment}
             />
             
             <ClearanceItem 
-              name="Class Advisor Clearance"
+              name="Class Advisor"
               date={formatDate(application.updated_at)}
               comment={application.class_advisor_comment}
             />
             
             <ClearanceItem 
-              name="HOD Approval"
+              name="HOD"
               date={formatDate(application.updated_at)}
               comment={application.hod_comment}
             />
             
-            <div className="py-1.5">
-              <div className="flex items-center gap-2 mb-1">
+            <div className="py-1">
+              <div className="flex items-center gap-2 mb-0.5">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="font-semibold text-foreground text-sm">Lab Charges Payment</span>
+                <span className="font-semibold text-foreground text-sm">Lab Payment</span>
               </div>
               <div className="ml-6 text-xs text-muted-foreground">
-                <div>Transaction ID: {application.transaction_id || 'N/A'}</div>
-                <div>Verified on: {formatDate(application.updated_at)}</div>
-                <div className="italic">Remarks: {application.payment_comment || 'No remarks'}</div>
+                <div>ID: {application.transaction_id || 'N/A'}</div>
+                <div>{formatDate(application.updated_at)}</div>
+                <div className="italic">{application.payment_comment || 'No remarks'}</div>
               </div>
             </div>
             
             <ClearanceItem 
-              name="Lab Instructor Clearance"
+              name="Lab Instructor"
               date={formatDate(application.updated_at)}
               comment={application.lab_comment}
             />
