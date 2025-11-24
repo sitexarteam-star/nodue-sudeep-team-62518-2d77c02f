@@ -131,6 +131,7 @@ export default function CollegeOfficeDashboard() {
         .from('applications')
         .update({
           college_office_verified: approved,
+          college_office_verified_by: approved ? user?.id : null,
           college_office_comment: comment || null,
           status: approved ? 'college_office_verified' : 'rejected',
           updated_at: new Date().toISOString()
