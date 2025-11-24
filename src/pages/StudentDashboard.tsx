@@ -95,6 +95,26 @@ interface Application {
     name: string;
     designation: string;
   };
+  library_verifier?: {
+    name: string;
+    designation: string;
+  };
+  hostel_verifier?: {
+    name: string;
+    designation: string;
+  };
+  college_office_verifier?: {
+    name: string;
+    designation: string;
+  };
+  hod_verifier?: {
+    name: string;
+    designation: string;
+  };
+  lab_verifier?: {
+    name: string;
+    designation: string;
+  };
 }
 
 const StudentDashboard = () => {
@@ -156,13 +176,18 @@ const StudentDashboard = () => {
       // Check submission status
       await checkSubmissionStatus(profileData.batch);
 
-      // Fetch student applications with counsellor and class advisor names
+      // Fetch student applications with all staff member names
       const { data: applicationsData, error: applicationsError } = await supabase
         .from('applications')
         .select(`
           *,
           counsellor:counsellor_id(name, designation),
-          class_advisor:class_advisor_id(name, designation)
+          class_advisor:class_advisor_id(name, designation),
+          library_verifier:library_verified_by(name, designation),
+          hostel_verifier:hostel_verified_by(name, designation),
+          college_office_verifier:college_office_verified_by(name, designation),
+          hod_verifier:hod_verified_by(name, designation),
+          lab_verifier:lab_verified_by(name, designation)
         `)
         .eq('student_id', user.id)
         .order('created_at', { ascending: false });
@@ -398,19 +423,25 @@ const StudentDashboard = () => {
       name: "Library", 
       verified: currentApplication.library_verified, 
       required: true,
-      comment: currentApplication.library_comment 
+      comment: currentApplication.library_comment,
+      assignedTo: currentApplication.library_verifier?.name || null,
+      designation: currentApplication.library_verifier?.designation || null
     },
     { 
       name: "Hostel", 
       verified: currentApplication.hostel_verified, 
       required: profile?.student_type === 'hostel',
-      comment: currentApplication.hostel_comment 
+      comment: currentApplication.hostel_comment,
+      assignedTo: currentApplication.hostel_verifier?.name || null,
+      designation: currentApplication.hostel_verifier?.designation || null
     },
     { 
       name: "College Office", 
       verified: currentApplication.college_office_verified, 
       required: true,
-      comment: currentApplication.college_office_comment 
+      comment: currentApplication.college_office_comment,
+      assignedTo: currentApplication.college_office_verifier?.name || null,
+      designation: currentApplication.college_office_verifier?.designation || null
     },
     { 
       name: "Faculty", 
@@ -438,7 +469,9 @@ const StudentDashboard = () => {
       name: "HOD", 
       verified: currentApplication.hod_verified, 
       required: true,
-      comment: currentApplication.hod_comment 
+      comment: currentApplication.hod_comment,
+      assignedTo: currentApplication.hod_verifier?.name || null,
+      designation: currentApplication.hod_verifier?.designation || null
     },
     { 
       name: "Lab Charge Payment", 
@@ -450,7 +483,9 @@ const StudentDashboard = () => {
       name: "Lab Instructor", 
       verified: currentApplication.lab_verified, 
       required: true,
-      comment: currentApplication.lab_comment 
+      comment: currentApplication.lab_comment,
+      assignedTo: currentApplication.lab_verifier?.name || null,
+      designation: currentApplication.lab_verifier?.designation || null
     }
   ] : [];
 

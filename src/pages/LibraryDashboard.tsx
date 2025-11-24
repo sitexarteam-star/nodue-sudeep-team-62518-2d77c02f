@@ -174,6 +174,7 @@ export default function LibraryDashboard() {
         .from('applications')
         .update({
           library_verified: approved,
+          library_verified_by: approved ? user?.id : null,
           library_comment: comment || null,
           status: nextStatus,
           updated_at: new Date().toISOString()
