@@ -106,6 +106,10 @@ const StudentDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [submissionsAllowed, setSubmissionsAllowed] = useState(true);
   const [submissionMessage, setSubmissionMessage] = useState<string>('');
+  const [departmentHod, setDepartmentHod] = useState<{
+    name: string;
+    designation: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -152,6 +156,24 @@ const StudentDashboard = () => {
       }
 
       setProfile(profileData);
+
+      // Fetch HOD for the student's department
+      if (profileData.department) {
+        const { data: hodData } = await supabase
+          .from('staff_profiles')
+          .select('name, designation, user_roles!inner(role)')
+          .eq('department', profileData.department)
+          .eq('user_roles.role', 'hod')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (hodData) {
+          setDepartmentHod({
+            name: hodData.name,
+            designation: hodData.designation || 'HOD'
+          });
+        }
+      }
 
       // Check submission status
       await checkSubmissionStatus(profileData.batch);
@@ -434,12 +456,14 @@ const StudentDashboard = () => {
       assignedTo: currentApplication.class_advisor?.name || null,
       designation: currentApplication.class_advisor?.designation || null
     },
-    { 
-      name: "HOD", 
-      verified: currentApplication.hod_verified, 
-      required: true,
-      comment: currentApplication.hod_comment 
-    },
+                  { 
+                    name: "HOD", 
+                    verified: currentApplication.hod_verified, 
+                    required: true,
+                    comment: currentApplication.hod_comment,
+                    assignedTo: departmentHod?.name || null,
+                    designation: departmentHod?.designation || null
+                  },
     { 
       name: "Lab Charge Payment", 
       verified: currentApplication.payment_verified, 
